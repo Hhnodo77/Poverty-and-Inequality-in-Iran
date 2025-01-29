@@ -1,0 +1,658 @@
+---
+title: "DevEcon_Project2"
+author: "Hoda Noorbakhsh"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
+```
+
+```{r}
+library(readxl)
+library(RODBC)
+library(mdbr)
+library(dplyr)
+library(forcats)
+library(ineq)
+library(dplyr)
+```
+
+We first reda and clean HEIS data. We need data on durable and non-durable goods, household spending, income, and investment.
+```{r Read and Clean data}
+#Read and clean data
+
+db <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};
+    DBQ=F:/uni/master/3/Develop Economy/Project2/HB1402_14030707")
+R1402Data <- sqlFetch(db, "R1402Data", rownames=TRUE)
+U1402Data <- sqlFetch(db, "U1402Data", rownames=TRUE)
+
+R1402P1 <- sqlFetch(db, "R1402P1", rownames=TRUE)
+U1402P1 <- sqlFetch(db, "U1402P1", rownames=TRUE)
+
+R1402P3S01 <- sqlFetch(db, "R1402P3S01", rownames=TRUE)
+U1402P3S01 <- sqlFetch(db, "U1402P3S01", rownames=TRUE)
+
+R1402P3S02 <- sqlFetch(db, "R1402P3S02", rownames=TRUE)
+U1402P3S02 <- sqlFetch(db, "U1402P3S02", rownames=TRUE)
+
+R1402P3S03 <- sqlFetch(db, "R1402P3S03", rownames=TRUE)
+U1402P3S03 <- sqlFetch(db, "U1402P3S03", rownames=TRUE)
+
+R1402P3S04 <- sqlFetch(db, "R1402P3S04", rownames=TRUE)
+U1402P3S04 <- sqlFetch(db, "U1402P3S04", rownames=TRUE)
+
+R1402P3S05 <- sqlFetch(db, "R1402P3S05", rownames=TRUE)
+U1402P3S05 <- sqlFetch(db, "U1402P3S05", rownames=TRUE)
+
+R1402P3S06 <- sqlFetch(db, "R1402P3S06", rownames=TRUE)
+U1402P3S06 <- sqlFetch(db, "U1402P3S06", rownames=TRUE)
+
+R1402P3S07 <- sqlFetch(db, "R1402P3S07", rownames=TRUE)
+U1402P3S07 <- sqlFetch(db, "U1402P3S07", rownames=TRUE)
+
+R1402P3S08 <- sqlFetch(db, "R1402P3S08", rownames=TRUE)
+U1402P3S08 <- sqlFetch(db, "U1402P3S08", rownames=TRUE)
+
+R1402P3S09 <- sqlFetch(db, "R1402P3S09", rownames=TRUE)
+U1402P3S09 <- sqlFetch(db, "U1402P3S09", rownames=TRUE)
+
+R1402P3S11 <- sqlFetch(db, "R1402P3S11", rownames=TRUE)
+U1402P3S11 <- sqlFetch(db, "U1402P3S11", rownames=TRUE)
+
+R1402P3S12 <- sqlFetch(db, "R1402P3S12", rownames=TRUE)
+U1402P3S12 <- sqlFetch(db, "U1402P3S12", rownames=TRUE)
+
+R1402P3S13 <- sqlFetch(db, "R1402P3S13", rownames=TRUE)
+U1402P3S13 <- sqlFetch(db, "U1402P3S13", rownames=TRUE)
+
+R1402P3S14 <- sqlFetch(db, "R1402P3S14", rownames=TRUE)
+U1402P3S14 <- sqlFetch(db, "U1402P3S14", rownames=TRUE)
+
+R1402P4S01 <- sqlFetch(db, "R1402P4S01", rownames=TRUE)
+U1402P4S01 <- sqlFetch(db, "U1402P4S01", rownames=TRUE)
+
+R1402P2 <- sqlFetch(db, "R1402P2", rownames=TRUE)
+U1402P2 <- sqlFetch(db, "U1402P2", rownames=TRUE)
+odbcClose(db)
+```
+
+
+```{r echo=FALSE, warning=FALSE}
+relation <- c(head="1", spouse="2", child="3", childinlaw="4", grandchild="5", parent="6", sibling="7", relative="8", nonrelative="9")
+
+gender <- c(Male="1", Female="2")
+literacy <- c(literate="1", illiterate="2")
+yesno <- c(Yes="1", No="2")
+
+education <- c(Elemantry="1", Secondary="2", HighSchool="3", Diploma="4", College="5", Bachelor="6", Master="7", PhD="8", Other="9")
+
+occupation <- c(employed="1", unemployed="2", IncomeWOJob="3", Student="4", Housewife="5", Other="6")
+marital <- c(Married ="1", Widowed="2", Divorced="3", Single="4")
+
+
+R1402P1 <- R1402P1 %>% 
+  rename(
+    member = DYCOL01,
+    relation = DYCOL03,
+    gender = DYCOL04,
+    age = DYCOL05,
+    literacy = DYCOL06,
+    studying = DYCOL07,
+    education = DYCOL08,
+    occupationalst = DYCOL09,
+    maritalst = DYCOL10) %>% 
+  mutate(across(where(is.character), as.integer),
+         across(c(relation,gender,literacy,studying,education,occupationalst,maritalst), as.factor),
+         relation = fct_recode(relation, !!!relation), 
+         gender = fct_recode(gender, !!!gender),
+         literacy = fct_recode(literacy, !!!literacy), 
+         studying = fct_recode(studying, !!!yesno),
+         education = fct_recode(education, !!!education), 
+         occupationalst = fct_recode(occupationalst, !!!occupation),
+         maritalst = fct_recode(maritalst, !!!marital))
+
+
+U1402P1 <- U1402P1 %>% 
+  rename(
+    member = DYCOL01,
+    relation = DYCOL03,
+    gender = DYCOL04,
+    age = DYCOL05,
+    literacy = DYCOL06,
+    studying = DYCOL07,
+    education = DYCOL08,
+    occupationalst = DYCOL09,
+    maritalst = DYCOL10) %>%  
+  mutate(across(where(is.character), as.integer),
+         across(c(relation,gender,literacy,studying,education,occupationalst,maritalst), as.factor),
+         relation = fct_recode(relation, !!!relation), 
+         gender = fct_recode(gender, !!!gender),
+         literacy = fct_recode(literacy, !!!literacy), 
+         studying = fct_recode(studying, !!!yesno),
+         education = fct_recode(education, !!!education), 
+         occupationalst = fct_recode(occupationalst, !!!occupation),
+         maritalst = fct_recode(maritalst, !!!marital))
+```
+
+```{r echo=FALSE, warning=FALSE}
+for (i in list("R1402P3S01", "U1402P3S01")) {
+assign(i, get(i) %>%
+    rename(
+      code = DYCOL01,
+      purchased = DYCOL02,
+      gram = DYCOL03,
+      kilogram = DYCOL04,
+      price = DYCOL05,
+      value = DYCOL06 ) %>% 
+    mutate(
+      table = 1L) %>% 
+    mutate(purchased=factor(purchased, levels = c(1,2,3,4,5,6,7,8),
+                                  labels = c("purchased",
+                                            "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S02", "U1402P3S02")) {
+assign(i, get(i) %>%
+    rename(
+      code = DYCOL01,
+      purchased = DYCOL02,
+      gram = DYCOL03,
+      kilogram = DYCOL04,
+      price = DYCOL05,
+      value = DYCOL06 ) %>% 
+    mutate(
+      table = 2L) %>% 
+    mutate(purchased=factor(purchased, levels = c(1,2,3,4,5,6,7,8),
+                                  labels = c("purchased",
+                                            "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S03", "U1402P3S03")) {
+assign(i, get(i) %>%
+    rename(
+      code = DYCOL01,
+      purchased = DYCOL02,
+      value = DYCOL03 ) %>% 
+    mutate(
+      table = 3L) %>% 
+    mutate(purchased=factor(purchased, levels = c(1,2,3,4,5,6,7,8),
+                                  labels = c("purchased",
+                                            "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S04", "U1402P3S04")) {
+assign(i, get(i) %>%
+    rename(
+      code = DYCOL01,
+    mortgage = DYCOL02,
+    purchased = DYCOL03,
+    value = DYCOL04 ) %>% 
+    mutate(
+      table = 4L) %>% 
+    mutate(purchased=factor(purchased, levels = c(1,2,3,4,5,6,7,8),
+                                  labels = c("purchased",
+                                            "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S05", "U1402P3S05")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03 ) %>% 
+  mutate(table = 5L) %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S06", "U1402P3S06")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03) %>% 
+  mutate(table = 6L) %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S07", "U1402P3S07")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03) %>% 
+  mutate(
+    table = 7L)  %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S08", "U1402P3S08")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03) %>% 
+  mutate(
+    table = 8L) %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S09", "U1402P3S09")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03) %>% 
+  mutate(
+    table = 9L) %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S11", "U1402P3S11")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03) %>% 
+  mutate(
+    table = 11L)  %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+for (i in list("R1402P3S12", "U1402P3S12")) {
+assign(i, get(i) %>%
+  rename(
+    goods_code = DYCOL01,
+    provision_type = DYCOL02,
+    value = DYCOL03) %>% 
+  mutate(
+    table = 12L)  %>% 
+  mutate(provision_type=factor(provision_type, levels = c(1,2,3,4,5,6,7,8),
+                                labels = c("purchased",
+                                           "homemade",
+                                            "publicservice",
+                                            "cooperativeservice",
+                                            "privateservice",
+                                            "agriculture",
+                                            "nonagriculture",
+                                            "free"))))
+}
+
+tenure <- c(OwnedEstateLand="1", OwnedEstate="2", Rent="3", Mortgage="4", Service="5", Free="6", Other="7")
+# Major materials
+material <- c(MetalBlock="1", BrickWood="2", Cement="3", Brick="4", Wood="5", WoodKesht="6", KeshtGel="7", Other="8")
+# Type of used fuel in the cooking
+fuel <- c(Oil="1", Gasoline="2", LiquidGas="3", NaturalGas="4", Electricity="5", Wood="6", AnimalOil="7", Coke="8", Other="9", None="10" )
+# Type of used fuel in heating
+fuel1 <- c(Oil="11", Gasoline="12", LiquidGas="13", NaturalGas="14", Electricity="15", Wood="16", AnimalOil="17", Coke="18", Other="19", None="20" )
+# Type of used fuel in providing Hot Water
+fuel2 <- c(Oil="21", Gasoline="22", LiquidGas="23", NaturalGas="24", Electricity="25", Wood="26", AnimalOil="27", Coke="28", Other="29", None="30" )
+
+
+for (i in list("R1402P2", "U1402P2")) {
+assign(i, get(i) %>%
+  rename(
+    tenure = DYCOL01,
+    room = DYCOL03,
+    space = DYCOL04,
+    construction = DYCOL05,
+    material = DYCOL06,
+    vehicle = DYCOL07,
+    motorcycle = DYCOL08,
+    bicycle = DYCOL09,
+    radio = DYCOL10,
+    radiotape = DYCOL11,
+    TVbw = DYCOL12,
+    TV = DYCOL13,
+    VHS_VCD_DVD = DYCOL14,
+    computer = DYCOL15,
+    cellphone = DYCOL16,
+    freezer = DYCOL17,
+    refridgerator = DYCOL18,
+    fridge = DYCOL19,
+    stove = DYCOL20,
+    vacuum = DYCOL21,
+    washingmachine = DYCOL22,
+    sewingmachine = DYCOL23,
+    fan = DYCOL24,
+    evapcoolingportable = DYCOL25,
+    splitportable = DYCOL26,
+    dishwasher = DYCOL27,
+    microwave = DYCOL28,
+    none = DYCOL29,
+    pipewater = DYCOL30,
+    electricity = DYCOL31,
+    pipegas = DYCOL32,
+    telephone = DYCOL33,
+    internet  = DYCOL34,
+    bathroom = DYCOL35,
+    kitchen = DYCOL36,
+    evapcooling = DYCOL37,
+    centralcooling = DYCOL38,
+    centralheating = DYCOL39,
+    package = DYCOL40,
+    split = DYCOL41,
+    wastewater = DYCOL42,
+    cookingfuel = DYCOL43,
+    heatingfuel = DYCOL44,
+    waterheatingfuel = DYCOL45) %>% 
+  mutate(across(where(is.character), as.integer),
+         across(c(tenure,material,cookingfuel,heatingfuel,waterheatingfuel), as.factor),
+         tenure = fct_recode(tenure, !!!tenure), 
+         material = fct_recode(material, !!!material),
+         cookingfuel = fct_recode(cookingfuel, !!!fuel), 
+         heatingfuel = fct_recode(heatingfuel, !!!fuel1),
+         waterheatingfuel = fct_recode(waterheatingfuel, !!!fuel2),
+         across(vehicle:wastewater, ~!is.na(.x))))
+}
+```
+
+
+```{r}
+R1402P1_head <- R1402P1 %>%
+  filter(member == "1")
+
+RData1 <- merge(R1402Data, R1402P1_head, by = "Address")
+RData <- RData1 %>%
+  mutate(RU = 0)
+
+U1402P1_head <- U1402P1 %>%
+  filter(member == "1")
+
+UData1 <- merge(U1402Data, U1402P1_head, by = "Address")
+UData <- UData1 %>%
+  mutate(RU = 1) 
+
+RUData <- rbind(UData, RData)
+
+R1402P3S01 <- R1402P3S01 %>%
+  mutate(RU = 1) 
+U1402P3S01 <- U1402P3S01 %>%
+  mutate(RU = 0) 
+
+RUData_Food <- rbind(U1402P3S01, R1402P3S01)
+
+R1402P2 <- R1402P2 %>%
+  mutate(RU = 1) 
+U1402P2 <- U1402P2 %>%
+  mutate(RU = 0) 
+
+RU1402P2 <- rbind(U1402P2, R1402P2)
+```
+
+```{r}
+Province <- c(Markazi = "00", Ardabil = "24", Bushehr = "18", `Chaharmahal and Bakhtiari` = "14",
+  `East Azerbaijan` = "03", Fars = "07", Gilan = "01", Golestan = "27",
+  Hamadan = "13", Hormozgan = "22", Ilam = "16", Isfahan = "10",
+  Kerman = "08", Kermanshah = "05", Khuzestan = "06", `Kohgiluyeh and Boyer-Ahmad` = "17",
+  Kurdistan = "12", Lorestan = "15", Alborz = "30", Mazandaran = "02",
+  `North Khorasan` = "28", Qazvin = "26", Qom = "25", `Razavi Khorasan` = "09",
+  Semnan = "20", `Sistan and Baluchestan` = "11", `South Khorasan` = "29", Tehran = "23",
+  `West Azerbaijan` = "04", Yazd = "21", Zanjan = "19")
+
+RUData <- RUData %>% 
+  mutate(
+    province_code = as.character(substr(Address, 2, 3)), 
+    province = recode(province_code, !!!Province), 
+    town = as.integer(substr(Address, 4, 5)),
+         NEW_Weight = case_when(relation == "head" ~ 1,
+                                (relation != "head" & age >= 18) ~ 0.8,
+                                (relation != "head" & age < 18) ~ 0.5),
+         adjusted_weight = Weight * NEW_Weight)
+
+RUData_Food <- RUData_Food %>%
+  left_join(select(RUData, Address, Weight), by = "Address") %>%
+  left_join(select(RUData, Address, adjusted_weight), by = "Address") %>%
+  left_join(select(RUData, Address, NEW_Weight), by = "Address") %>%
+  left_join(select(RUData, Address, province), by = "Address")
+
+```
+
+Extract food items from data and label them.
+
+```{r}
+RUData_Food <- RUData_Food %>% 
+  mutate(label = case_when(
+    code >= 11140 & code <= 11156 ~ "bread",
+    code >= 11111 & code <= 11118 ~ "rice",
+    code == 11164 ~ "spaghetti",
+    code == 11731 | code == 11725 ~ "potato & pea", 
+    # Use | instead of &
+    code >= 11411 & code <= 11414 ~ "milk",
+    code >= 11424 & code <= 11426 ~ "yoghurt",
+    (code == 11241) | (code >= 11211 & code <= 11224) ~ "Meat",
+    code >= 11441 & code <= 11443 ~ "egg",
+    code >= 11428 & code <= 11432 ~ "cheese",
+    code >= 11611 & code <= 11643 ~ "fruit",
+    (code >= 11711 & code <= 11716) | (code >= 11721 & code <= 11754) & code != 11731 ~ "vegetables", 
+    # Corrected logical grouping
+    code == 11533 ~ "oil",
+    code == 11812 | code == 11811 | (code >= 11821 & code <= 11823) ~ "sugar & Jam", 
+    # Corrected logical grouping
+    code >= 11761 & code <= 11769 ~ "hobobat",
+    ((code >= 11311 & code <= 11321) & code != 11319) | (code >= 11231 & code <= 11239) ~ "fish & chiken", 
+    # Corrected logical grouping
+    TRUE ~ NA_character_))
+```
+
+Modify the "Kilogram" column and generate a data frame based on the above food bundle table.
+
+```{r}
+merged_data <- RUData_Food %>%
+  mutate(across(c(price,value,gram,kilogram,Weight),  ~ as.numeric(as.character(.x)))) %>%
+  mutate(gram = ifelse(is.na(gram), 0, gram/1000)) %>% 
+  mutate(kilogram = ifelse(is.na(kilogram), 0, kilogram)) %>% 
+  mutate(kilogram = kilogram + gram) %>% 
+  select(-gram)
+
+prices <- merged_data %>%
+  group_by(label, RU) %>%
+  summarize(weighted_mean_price = sum(value * adjusted_weight, na.rm = TRUE) / sum(kilogram * adjusted_weight, na.rm = TRUE))
+```
+Here, we calculate the absolute poverty line based on the food bundle proposed by the Ministry of Health, providing **2,100 Kilo Calories per day** and the required protein contents.
+
+```{r}
+monthly_needs <- data.frame(
+  label = c("bread", "rice", "spaghetti", "potato & pee", "hobobat", "milk", "yoghurt",
+            "Meat", "fish & chiken", "egg", "cheese", "fruit", "vegetables", "oil", "sugar & jam"),
+  needs_kg = c(8, 3, 0.7, 1.5, 0.6, 7, 3, 1.2, 1.5, 0.7, 0.45, 9, 4.5, 0.9, 1)
+)
+
+```
+
+We use
+$$\text{Weighted Mean Price} = \frac{\sum_{i=1}^{n} (\text{weight}_i \times \text{value}_i)}{\sum_{i=1}^{n} (\text{weight}_i \times \text{kilogram}_i)}$$
+to calculate the weighted mean.
+
+```{r}
+Total_cost_by_province <- merged_data %>%
+  group_by(label, province) %>%
+  dplyr::summarize(weighted_mean_price = weighted.mean(price, Weight, na.rm = TRUE)) %>%
+  left_join(monthly_needs, by = "label") %>% 
+  mutate(total_product_cost = weighted_mean_price * needs_kg) %>%
+  group_by(province) %>%
+  summarise(total_bundle_price = sum(total_product_cost, na.rm = TRUE))
+print(Total_cost_by_province)
+```
+Provinces with highest absolute poverty line are **Tehran** and **Mazandaran**. Cost of food bundle for one person in a month is about **20,270,000 Rial**.
+
+Provinces with lowest absolute poverty line are **Lorestan** with **14613179 Rial** and **West Azerbaijan** with **15318382 Rial**.
+
+```{r}
+Total_cost_RU <- merged_data %>%
+  group_by(label, RU) %>%
+  summarize(weighted_mean_price = sum(value * adjusted_weight, na.rm = TRUE) / sum(kilogram * adjusted_weight, na.rm = TRUE)) %>%
+  left_join(monthly_needs, by = "label") %>%
+  mutate(total_product_cost = weighted_mean_price * needs_kg) %>%
+  group_by(RU) %>%
+    summarize(total_bundle_price = sum(total_product_cost, na.rm = TRUE)) 
+    print(Total_cost_RU)
+
+```
+The absolute poverty line based on 2,100 calories per day is about **16,379,500  Rial** in urban areas and about * Tomans**14,487,437 Rial** in rural areas.
+
+
+
+```{r}
+#Read Iranian Welfare Database
+
+#IWD <- read.csv("F:/uni/master/3/Develop Economy/Project2/nemone_2_darsadi_1402.csv")
+#save(IWD, file = "IWD.Rdata")
+```
+
+```{r}
+load("IWD.Rdata")
+```
+In the absence of comprehensive and accurate data on household income, a proxy variable (ProxyIncome) was constructed to estimate income levels indirectly. This proxy combines two components:
+
+    1. CardProxy: This component aggregates monthly financial transaction data, including card-to-card transfers, Paya transactions, and Satna transactions. These sources are assumed to be indicative of household liquidity and cash flow. The aggregated sum of these values was scaled down by a factor of 1e61e6 for better interpretability.
+
+    2. AssetsProxy: This component represents the household's reported assets, including the market value of their cars and stock portfolio holdings. These values were also scaled down by 1e61e6 for consistency with the CardProxy component.
+
+To construct ProxyIncome, the two components were combined with weightings of 90% for CardProxy and 10% for AssetsProxy. The higher weight for CardProxy reflects its stronger correlation with household cash flow and immediate financial activity, while AssetsProxy captures longer-term wealth that may influence income indirectly.
+
+The constructed ProxyIncome variable was further refined by filtering out extreme values. Households with ProxyIncome at or above the 99th percentile were excluded to mitigate the influence of outliers.
+
+This proxy methodology is designed to provide a reasonable approximation of income distribution while accounting for limitations in the available data.
+
+```{r}
+IWD <- IWD %>%
+  mutate(
+    CardProxy = (CardBeCardPerMonth_1402 + PayaPerMonth_1402 + SatnaPerMonth_1402) / 1e6, 
+    AssetsProxy = (CarsPrice + Bourse_NetPortfoValue) / 1e6,  
+    ProxyIncome = (0.9 * CardProxy + 0.1 * AssetsProxy) 
+  ) %>%
+  filter(ProxyIncome > 0 & ProxyIncome < quantile(ProxyIncome, 0.98, na.rm = TRUE))  
+
+summary(IWD$ProxyIncome)
+
+gini_coeff <- Gini(IWD$ProxyIncome, na.rm = TRUE)
+cat("Gini Coefficient (Using ProxyIncome):", gini_coeff, "\n")
+
+total_income <- sum(IWD$ProxyIncome, na.rm = TRUE)  
+top_1_cutoff <- quantile(IWD$ProxyIncome, 0.98, na.rm = TRUE)  
+
+top_1_income <- IWD %>%
+  filter(ProxyIncome > top_1_cutoff) %>%
+  summarize(TotalTop1 = sum(ProxyIncome, na.rm = TRUE)) %>%
+  pull(TotalTop1)
+
+top_1_share <- top_1_income / total_income * 100
+cat("Top 1% Share of Total Income:", round(top_1_share, 2), "%\n")
+
+```
+In HEIS data, the primary goal is to calculate the total expenditure on non-durable goods across all 12 tables (representing different provinces or regions). This aggregated value serves as a proxy for income, which will then be used to measure income inequality through the calculation of the Gini coefficient.
+Also, according to the table, half of the population has an income of about **44 million Tomans** and top 1% Share of Total Income is 9.02 %.
+
+Now use Lorenz Curve to illustrate the distribution of income or wealth within a population. It plots the cumulative percentage of income or wealth against the cumulative percentage of the population. In a perfectly equal distribution, the curve aligns with the diagonal line of perfect equality. The further the curve deviates from this diagonal, the greater the inequality in the distribution.
+
+
+```{r, echo=TRUE, fig.width=8, fig.height=6}
+# Compute Lorenz curves
+lorenz_revenue <- Lc(IWD$ProxyIncome)
+gini_revenue <- round(Gini(IWD$ProxyIncome), 2) 
+plot(lorenz_revenue,
+     main = "Lorenz Curves",
+     xlab = "Cumulative Share of Population",
+     ylab = "Cumulative Share of Income",
+     col = "blue",
+     lwd = 2)
+abline(0, 1, col = "black", lty = 2)
+
+legend("topleft",
+       legend = c("IWD DataBase", "Line of Equality"),
+       col = c("blue", "black"),
+       lty = c(1, 1, 1, 1),
+       lwd = c(2, 2, 2, 2),
+       bg = "white")
+
+text(0.8, 0.25, paste("Gini (Revenue - WelfareDataBase):", gini_revenue), col = "blue", cex = 0.7)
+```
+Based on available statistics, Iran's Gini coefficient is approximately 0.39. I estimate it is around 0.46. This value suggests that while inequality exists, it is not extreme. However, it is important to note that this calculation relies on proxy data, specifically expenditures on non-durable goods, rather than direct income measurements.
+
+```{r}
+#library(labelled)
+#library(leaflet)
+#library(sf)
+
+#MAP <- read_sf("F:/uni/master/3/Develop Economy/Project2/irn_admbnda_adm0_unhcr_20190514")
+
+```
+
+
+
+
+
